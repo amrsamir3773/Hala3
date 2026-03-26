@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AQAR AI — نظام إدارة الليدز العقاري</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #C9A84C;
+  --gold-light: #E8C96A;
+  --gold-dark: #9A7A2E;
+  --deep: #0A0E1A;
+  --surface: #111827;
+  --surface2: #1A2235;
+  --surface3: #1E2D45;
+  --border: rgba(201,168,76,0.15);
+  --border-bright: rgba(201,168,76,0.4);
+  --text: #E8EAF0;
+  --text-muted: #7B8BA0;
+  --green: #10B981;
+  --red: #EF4444;
+  --blue: #3B82F6;
+  --orange: #F59E0B;
+  --purple: #8B5CF6;
+  --radius: 12px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Cairo',sans-serif; background:var(--deep); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+/* LOADER */
+#loader {
+  position:fixed; inset:0; background:var(--deep); z-index:9999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+  transition: opacity 0.5s ease;
+}
+.loader-logo { font-family:'Tajawal',sans-serif; font-size:48px; font-weight:900; color:var(--gold); letter-spacing:4px; }
+.loader-sub { color:var(--text-muted); font-size:14px; }
+.loader-bar { width:200px; height:2px; background:rgba(201,168,76,0.2); border-radius:1px; overflow:hidden; }
+.loader-fill { height:100%; background:linear-gradient(90deg,var(--gold-dark),var(--gold-light)); border-radius:1px; animation:loadfill 1.5s ease forwards; }
+@keyframes loadfill { from{width:0} to{width:100%} }
+
+/* LAYOUT */
+.app { display:flex; height:100vh; overflow:hidden; }
+.sidebar { width:260px; background:var(--surface); border-left:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; transition:transform 0.3s; }
+.main { flex:1; overflow-y:auto; background:var(--deep); }
+
+/* SIDEBAR */
+.sidebar-header { padding:24px 20px; border-bottom:1px solid var(--border); }
+.brand { display:flex; align-items:center; gap:10px; }
+.brand-icon { width:38px; height:38px; background:linear-gradient(135deg,var(--gold-dark),var(--gold-light)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+.brand-name { font-family:'Tajawal',sans-serif; font-size:20px; font-weight:900; color:var(--gold); }
+.brand-sub { font-size:10px; color:var(--text-muted); letter-spacing:2px; }
+
+.role-badge { margin:12px 20px; background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.05)); border:1px solid var(--border-bright); border-radius:8px; padding:10px 14px; display:flex; align-items:center; gap:10px; }
+.role-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--gold-dark),var(--gold)); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:var(--deep); }
+.role-name { font-size:13px; font-weight:700; color:var(--gold); }
+.role-title { font-size:10px; color:var(--text-muted); }
+
+.nav { padding:10px 0; flex:1; overflow-y:auto; }
+.nav-group { margin-bottom:4px; }
+.nav-label { padding:8px 20px; font-size:10px; color:var(--text-muted); letter-spacing:2px; text-transform:uppercase; }
+.nav-item { display:flex; align-items:center; gap:12px; padding:11px 20px; cursor:pointer; transition:all 0.2s; border-right:3px solid transparent; position:relative; }
+.nav-item:hover { background:rgba(201,168,76,0.05); color:var(--gold-light); }
+.nav-item.active { background:rgba(201,168,76,0.08); border-right-color:var(--gold); color:var(--gold); }
+.nav-icon { font-size:18px; width:22px; text-align:center; }
+.nav-text { font-size:13px; font-weight:500; flex:1; }
+.nav-badge { background:var(--red); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; }
+.nav-badge.green { background:var(--green); }
+
+/* TOPBAR */
+.topbar { background:var(--surface); border-bottom:1px solid var(--border); padding:0 28px; height:64px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.topbar-title { font-family:'Tajawal',sans-serif; font-size:18px; font-weight:700; color:var(--text); }
+.topbar-title span { color:var(--gold); }
+.topbar-actions { display:flex; align-items:center; gap:12px; }
+.btn { padding:8px 18px; border-radius:8px; font-family:'Cairo',sans-serif; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; }
+.btn-primary { background:linear-gradient(135deg,var(--gold-dark),var(--gold)); color:var(--deep); }
+.btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(201,168,76,0.3); }
+.btn-ghost { background:transparent; border:1px solid var(--border-bright); color:var(--gold); }
+.btn-ghost:hover { background:rgba(201,168,76,0.08); }
+.btn-sm { padding:6px 14px; font-size:12px; }
+.btn-green { background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); color:var(--green); }
+.btn-red { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:var(--red); }
+.notif-btn { width:38px; height:38px; border-radius:9px; background:rgba(201,168,76,0.06); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:17px; position:relative; transition:all 0.2s; }
+.notif-btn:hover { border-color:var(--border-bright); }
+.notif-dot { position:absolute; top:5px; right:5px; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid var(--surface); }
+
+/* PAGES */
+.page { display:none; padding:24px 28px; animation:fadeIn 0.3s ease; }
+.page.active { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* STATS GRID */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; position:relative; overflow:hidden; transition:all 0.2s; }
+.stat-card:hover { border-color:var(--border-bright); transform:translateY(-2px); }
+.stat-card::before { content:''; position:absolute; top:0; right:0; width:60px; height:60px; border-radius:50%; opacity:0.06; }
+.stat-card.gold::before { background:var(--gold); }
+.stat-card.green::before { background:var(--green); }
+.stat-card.blue::before { background:var(--blue); }
+.stat-card.red::before { background:var(--red); }
+.stat-card.purple::before { background:var(--purple); }
+.stat-icon { font-size:24px; margin-bottom:10px; }
+.stat-value { font-family:'Tajawal',sans-serif; font-size:32px; font-weight:900; line-height:1; margin-bottom:4px; }
+.stat-card.gold .stat-value { color:var(--gold); }
+.stat-card.green .stat-value { color:var(--green); }
+.stat-card.blue .stat-value { color:var(--blue); }
+.stat-card.red .stat-value { color:var(--red); }
+.stat-card.purple .stat-value { color:var(--purple); }
+.stat-label { font-size:12px; color:var(--text-muted); }
+.stat-change { font-size:11px; margin-top:6px; }
+.stat-change.up { color:var(--green); }
+.stat-change.down { color:var(--red); }
+
+/* SECTION */
+.section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:20px; overflow:hidden; }
+.section-header { padding:18px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.section-title { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+.section-title .dot { width:8px; height:8px; border-radius:50%; background:var(--gold); }
+
+/* TABLE */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th { padding:11px 16px; font-size:11px; color:var(--text-muted); text-align:right; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; border-bottom:1px solid var(--border); background:rgba(0,0,0,0.2); }
+td { padding:13px 16px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.03); }
+tr:hover td { background:rgba(201,168,76,0.03); }
+tr:last-child td { border-bottom:none; }
+
+/* BADGES */
+.badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+.badge::before { content:''; width:6px; height:6px; border-radius:50%; }
+.badge-new { background:rgba(59,130,246,0.12); color:var(--blue); border:1px solid rgba(59,130,246,0.2); }
+.badge-new::before { background:var(--blue); }
+.badge-hot { background:rgba(239,68,68,0.12); color:var(--red); border:1px solid rgba(239,68,68,0.2); }
+.badge-hot::before { background:var(--red); box-shadow:0 0 6px var(--red); animation:pulse 1.5s infinite; }
+.badge-warm { background:rgba(245,158,11,0.12); color:var(--orange); border:1px solid rgba(245,158,11,0.2); }
+.badge-warm::before { background:var(--orange); }
+.badge-cold { background:rgba(107,114,128,0.12); color:#9CA3AF; border:1px solid rgba(107,114,128,0.2); }
+.badge-cold::before { background:#6B7280; }
+.badge-closed { background:rgba(16,185,129,0.12); color:var(--green); border:1px solid rgba(16,185,129,0.2); }
+.badge-closed::before { background:var(--green); }
+.badge-lost { background:rgba(239,68,68,0.08); color:#F87171; border:1px solid rgba(239,68,68,0.15); }
+.badge-lost::before { background:#F87171; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* PIPELINE */
+.pipeline { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+.pipe-col { background:rgba(0,0,0,0.2); border-radius:10px; padding:12px; border:1px solid var(--border); }
+.pipe-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+.pipe-title { font-size:12px; font-weight:700; color:var(--text-muted); }
+.pipe-count { background:var(--surface3); border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700; }
+.pipe-card { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:8px; cursor:pointer; transition:all 0.2s; }
+.pipe-card:hover { border-color:var(--border-bright); transform:translateX(-2px); }
+.pipe-card-name { font-size:13px; font-weight:600; margin-bottom:4px; }
+.pipe-card-meta { font-size:11px; color:var(--text-muted); margin-bottom:8px; }
+.pipe-card-value { font-size:12px; font-weight:700; color:var(--gold); }
+.pipe-card-agent { display:flex; align-items:center; gap:6px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+.mini-avatar { width:20px; height:20px; border-radius:50%; background:linear-gradient(135deg,var(--blue),var(--purple)); font-size:9px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; }
+
+/* AI AGENT */
+.ai-chat { display:flex; flex-direction:column; height:500px; }
+.chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+.chat-msg { max-width:70%; }
+.chat-msg.ai { align-self:flex-start; }
+.chat-msg.user { align-self:flex-end; }
+.chat-bubble { padding:12px 16px; border-radius:12px; font-size:13px; line-height:1.6; }
+.chat-msg.ai .chat-bubble { background:var(--surface2); border:1px solid var(--border); border-radius:12px 12px 12px 4px; }
+.chat-msg.user .chat-bubble { background:linear-gradient(135deg,var(--gold-dark),var(--gold)); color:var(--deep); font-weight:500; border-radius:12px 12px 4px 12px; }
+.chat-name { font-size:10px; color:var(--text-muted); margin-bottom:4px; }
+.chat-input-row { padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:10px; }
+.chat-input { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; color:var(--text); font-family:'Cairo',sans-serif; font-size:13px; outline:none; }
+.chat-input:focus { border-color:var(--border-bright); }
+.chat-input::placeholder { color:var(--text-muted); }
+
+/* AD GENERATOR */
+.ad-form { padding:20px; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-group.full { grid-column:1/-1; }
+label { font-size:12px; color:var(--text-muted); font-weight:600; }
+input, select, textarea { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; color:var(--text); font-family:'Cairo',sans-serif; font-size:13px; outline:none; transition:border 0.2s; }
+input:focus, select:focus, textarea:focus { border-color:var(--border-bright); }
+select option { background:var(--surface); }
+textarea { resize:vertical; min-height:80px; }
+
+/* AD PREVIEW */
+.ad-preview { background:linear-gradient(135deg,var(--surface2),var(--surface3)); border:1px solid var(--border-bright); border-radius:12px; padding:20px; margin:16px; position:relative; overflow:hidden; }
+.ad-preview::before { content:''; position:absolute; top:-30%; right:-10%; width:200px; height:200px; border-radius:50%; background:radial-gradient(circle,rgba(201,168,76,0.15),transparent); }
+.ad-tag { font-size:10px; background:linear-gradient(135deg,var(--gold-dark),var(--gold)); color:var(--deep); padding:4px 12px; border-radius:20px; display:inline-block; font-weight:700; margin-bottom:12px; }
+.ad-headline { font-family:'Tajawal',sans-serif; font-size:22px; font-weight:900; line-height:1.3; margin-bottom:10px; }
+.ad-body { font-size:13px; color:var(--text-muted); line-height:1.7; margin-bottom:14px; }
+.ad-cta { display:inline-flex; align-items:center; gap:8px; background:var(--gold); color:var(--deep); padding:10px 22px; border-radius:25px; font-weight:700; font-size:13px; cursor:pointer; }
+.ad-hashtags { margin-top:12px; font-size:11px; color:rgba(201,168,76,0.6); }
+
+/* ASSIGNMENT */
+.assign-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:20px; }
+.agent-card { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all 0.2s; }
+.agent-card:hover { border-color:var(--border-bright); }
+.agent-card.selected { border-color:var(--gold); background:rgba(201,168,76,0.06); }
+.agent-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:#fff; flex-shrink:0; }
+.agent-name { font-size:14px; font-weight:700; margin-bottom:3px; }
+.agent-stats { font-size:11px; color:var(--text-muted); }
+.agent-load { margin-top:8px; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
+.agent-load-fill { height:100%; border-radius:2px; }
+
+/* REPORTS */
+.chart-container { padding:20px; }
+.bar-chart { display:flex; align-items:flex-end; gap:8px; height:160px; }
+.bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.bar { width:100%; border-radius:4px 4px 0 0; transition:all 0.5s; cursor:pointer; }
+.bar:hover { opacity:0.8; filter:brightness(1.2); }
+.bar-label { font-size:10px; color:var(--text-muted); }
+
+/* MODAL */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:1000; display:none; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; width:90%; max-width:560px; max-height:85vh; overflow-y:auto; }
+.modal-header { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.modal-title { font-family:'Tajawal',sans-serif; font-size:18px; font-weight:700; }
+.modal-close { background:none; border:none; color:var(--text-muted); font-size:22px; cursor:pointer; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+.modal-close:hover { background:rgba(239,68,68,0.1); color:var(--red); }
+.modal-body { padding:24px; }
+
+/* TIMELINE */
+.timeline { padding:0 20px 20px; }
+.tl-item { display:flex; gap:14px; margin-bottom:16px; }
+.tl-dot-wrap { display:flex; flex-direction:column; align-items:center; gap:0; }
+.tl-dot { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+.tl-line { width:1px; background:var(--border); flex:1; min-height:20px; }
+.tl-content { flex:1; padding-bottom:4px; }
+.tl-title { font-size:13px; font-weight:600; margin-bottom:2px; }
+.tl-time { font-size:11px; color:var(--text-muted); }
+.tl-note { font-size:12px; color:var(--text-muted); margin-top:4px; background:rgba(0,0,0,0.2); padding:8px 12px; border-radius:8px; border-right:2px solid var(--border-bright); }
+
+/* ROLE SWITCHER */
+.role-switcher { display:flex; gap:8px; padding:16px 20px 0; flex-wrap:wrap; }
+.role-btn { padding:7px 14px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text-muted); transition:all 0.2s; font-family:'Cairo',sans-serif; }
+.role-btn.active { background:rgba(201,168,76,0.1); border-color:var(--border-bright); color:var(--gold); }
+
+/* AI GENERATING */
+.ai-typing { display:flex; gap:4px; align-items:center; padding:4px 0; }
+.ai-typing span { width:6px; height:6px; border-radius:50%; background:var(--gold); animation:typingDot 1.2s infinite; }
+.ai-typing span:nth-child(2) { animation-delay:0.2s; }
+.ai-typing span:nth-child(3) { animation-delay:0.4s; }
+@keyframes typingDot { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+/* FILTER BAR */
+.filter-bar { display:flex; gap:10px; padding:14px 20px; border-bottom:1px solid var(--border); overflow-x:auto; align-items:center; flex-wrap:wrap; }
+.filter-chip { padding:5px 14px; border-radius:20px; font-size:12px; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text-muted); transition:all 0.2s; font-family:'Cairo',sans-serif; white-space:nowrap; }
+.filter-chip.active { background:rgba(201,168,76,0.1); border-color:var(--border-bright); color:var(--gold); }
+
+/* PROGRESS */
+.progress-bar { height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; }
+.progress-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--gold-dark),var(--gold-light)); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(201,168,76,0.2); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(201,168,76,0.4); }
+
+/* RESPONSIVE */
+@media(max-width:1100px) { .pipeline { grid-template-columns:repeat(3,1fr); } }
+@media(max-width:768px) {
+  .sidebar { position:fixed; z-index:200; transform:translateX(260px); }
+  .sidebar.open { transform:translateX(0); }
+  .stats-grid { grid-template-columns:1fr 1fr; }
+  .pipeline { grid-template-columns:1fr; }
+  .assign-grid { grid-template-columns:1fr; }
+  .ad-form { grid-template-columns:1fr; }
+}
+
+/* AI GLOW */
+.ai-glow { box-shadow:0 0 20px rgba(201,168,76,0.1),inset 0 0 20px rgba(201,168,76,0.03); }
+.pulse-dot { width:8px; height:8px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+
+/* CUSTOM SELECT */
+.select-wrap { position:relative; }
+.select-wrap::after { content:'▾'; position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none; }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="loader-logo">AQAR AI</div>
+  <div class="loader-sub">نظام إدارة الليدز العقاري الذكي</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="brand-icon">🏙️</div>
+        <div>
+          <div class="brand-name">AQAR AI</div>
+          <div class="brand-sub">CRM SYSTEM</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="role-badge">
+      <div class="role-avatar" id="roleAvatar">SA</div>
+      <div>
+        <div class="role-name" id="roleNameDisplay">أحمد المدير</div>
+        <div class="role-title" id="roleTitleDisplay">Super Admin</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-group">
+        <div class="nav-label">الرئيسية</div>
+        <div class="nav-item active" onclick="navigate('dashboard',this)">
+          <span class="nav-icon">📊</span><span class="nav-text">لوحة التحكم</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">إدارة الليدز</div>
+        <div class="nav-item" onclick="navigate('leads',this)">
+          <span class="nav-icon">👥</span><span class="nav-text">جميع الليدز</span>
+          <span class="nav-badge">24</span>
+        </div>
+        <div class="nav-item" onclick="navigate('pipeline',this)">
+          <span class="nav-icon">🔄</span><span class="nav-text">البايبلاين</span>
+        </div>
+        <div class="nav-item" onclick="navigate('assign',this)">
+          <span class="nav-icon">🎯</span><span class="nav-text">توزيع الليدز</span>
+          <span class="nav-badge">8</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">الذكاء الاصطناعي</div>
+        <div class="nav-item" onclick="navigate('ai-agent',this)">
+          <span class="nav-icon">🤖</span><span class="nav-text">AI Agent</span>
+          <span class="nav-badge green">ON</span>
+        </div>
+        <div class="nav-item" onclick="navigate('ads',this)">
+          <span class="nav-icon">✨</span><span class="nav-text">منشئ الإعلانات</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">المتابعة</div>
+        <div class="nav-item" onclick="navigate('follow',this)">
+          <span class="nav-icon">📅</span><span class="nav-text">المتابعات</span>
+          <span class="nav-badge">5</span>
+        </div>
+        <div class="nav-item" onclick="navigate('reports',this)">
+          <span class="nav-icon">📈</span><span class="nav-text">التقارير</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">الإدارة</div>
+        <div class="nav-item" onclick="navigate('team',this)">
+          <span class="nav-icon">🏆</span><span class="nav-text">الفريق</span>
+        </div>
+        <div class="nav-item" onclick="navigate('settings',this)">
+          <span class="nav-icon">⚙️</span><span class="nav-text">الإعدادات</span>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:14px">
+        <button onclick="toggleSidebar()" style="background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;padding:4px;">☰</button>
+        <div class="topbar-title" id="pageTitle">لوحة <span>التحكم</span></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="openModal('addLeadModal')">+ إضافة ليد</button>
+        <div class="notif-btn" onclick="showNotifications()">🔔<span class="notif-dot"></span></div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:11px;color:var(--text-muted);">عرض كـ:</span>
+      <div class="role-switcher" style="padding:0;gap:8px;">
+        <button class="role-btn active" onclick="switchRole('admin',this)">👑 Super Admin</button>
+        <button class="role-btn" onclick="switchRole('manager',this)">📋 Sales Manager</button>
+        <button class="role-btn" onclick="switchRole('agent',this)">🎯 Sales Agent</button>
+        <button class="role-btn" onclick="switchRole('marketing',this)">📣 Marketing</button>
+      </div>
+    </div>
+
+    <div class="page active" id="page-dashboard">
+      <div style="margin-bottom:20px;padding-top:8px;">
+        <div style="font-size:13px;color:var(--text-muted);">مرحباً، أحمد 👋 — هنا ملخص أداء اليوم</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card gold">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-value">247</div>
+          <div class="stat-label">إجمالي الليدز</div>
+          <div class="stat-change up">↑ +18 هذا الأسبوع</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value">43</div>
+          <div class="stat-label">صفقات مغلقة</div>
+          <div class="stat-change up">↑ +6 هذا الشهر</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-value">31</div>
+          <div class="stat-label">ليدز ساخنة</div>
+          <div class="stat-change up">↑ +4 اليوم</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon">⏰</div>
+          <div class="stat-value">12</div>
+          <div class="stat-label">تحتاج متابعة</div>
+          <div class="stat-change down">↓ 3 متأخرة</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value">8.2M</div>
+          <div class="stat-label">قيمة الصفقات (ج.م)</div>
+          <div class="stat-change up">↑ +12% عن الهدف</div>
+        </div>
+      </div>
+      <div style="padding:20px;background:#111827;border:1px solid rgba(201,168,76,.15);border-radius:12px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:8px">تم تشغيل الصفحة</div>
+        <div style="font-size:13px;color:#7B8BA0">الملف محفوظ ويمكن فتحه محليًا في المتصفح.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const l = document.getElementById('loader');
+    l.style.opacity = '0';
+    setTimeout(() => l.style.display='none', 500);
+  }, 2000);
+});
+
+function navigate(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pageEl = document.getElementById('page-'+page);
+  if (pageEl) pageEl.classList.add('active');
+  if(el) el.classList.add('active');
+  const titles = {
+    dashboard:'لوحة التحكم', leads:'جميع الليدز', pipeline:'بايبلاين المبيعات',
+    assign:'توزيع الليدز', 'ai-agent':'AI Agent', ads:'منشئ الإعلانات',
+    follow:'المتابعات', reports:'التقارير والإحصائيات', team:'فريق المبيعات', settings:'الإعدادات'
+  };
+  const t = titles[page] || page;
+  const words = t.split(' ');
+  document.getElementById('pageTitle').innerHTML = words.slice(0,-1).join(' ') + ' <span>'+words.slice(-1)+'</span>';
+}
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+const roles = {
+  admin: {name:'أحمد المدير', title:'Super Admin', avatar:'SA', color:'#C9A84C'},
+  manager: {name:'محمد السيد', title:'Sales Manager', avatar:'MS', color:'#3B82F6'},
+  agent: {name:'أحمد علي', title:'Sales Agent', avatar:'أع', color:'#10B981'},
+  marketing: {name:'نور علي', title:'Marketing', avatar:'نع', color:'#8B5CF6'},
+};
+function switchRole(role, btn) {
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const r = roles[role];
+  document.getElementById('roleAvatar').textContent = r.avatar;
+  document.getElementById('roleAvatar').style.background = `linear-gradient(135deg,${r.color}88,${r.color})`;
+  document.getElementById('roleNameDisplay').textContent = r.name;
+  document.getElementById('roleTitleDisplay').textContent = r.title;
+}
+</script>
+</body>
+</html>
